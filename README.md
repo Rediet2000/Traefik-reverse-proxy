@@ -177,8 +177,10 @@ step 7 create dynamic.yml inside configurations directory
             default:
               sniStrict: true
               
-Final step run traefik reverse proy, go to traefik directory start application 
+Final step. go to traefik directory start application 
 
         docker-compose up -d 
-
-        docker-compose logs -f  # to  status 
+        
+check status application  status
+        
+        docker-compose logs -f 
