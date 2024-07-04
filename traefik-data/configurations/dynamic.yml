@@ -1,0 +1,26 @@
+http:
+      middlewares:
+        secureHeaders:
+          headers:
+            sslRedirect: true
+            forceSTSHeader: true
+            stsIncludeSubdomains: true
+            stsPreload: true
+            stsSeconds: 31536000
+    
+      routers:
+        chat_router:
+          rule: "Host(`example.domain.com`)" #replace with your actull domain name
+          tls:
+            certResolver: letsencrypt
+          service: chat_service
+    
+      services:
+        chat_service:
+          loadBalancer:
+            servers:
+              - url: "https://machine-ip:port" #repelace with your acuall ip 
+tls:
+      options:
+        default:
+          sniStrict: true
