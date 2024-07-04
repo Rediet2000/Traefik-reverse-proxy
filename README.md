@@ -1,4 +1,5 @@
 Introduction
+
 Traefik is a modern HTTP reverse proxy and load balancer that makes deploying microservices and distributed applications effortless. It's designed to integrte seamlessly with your existing infrastructure components and supports various backends, including Docker, Kubernetes, and other orchestration tools. Traefik is highly dynamic, meaning it can automatically detect changes in your infrastructure and update its routing configuration on the fly.
 
 Key Features
