@@ -161,14 +161,14 @@ step 7 create dynamic.yml inside configurations directory
                 stsSeconds: 31536000
         
           routers:
-            chat_router:
+            app_router:
               rule: "Host(`example.domain.com`)" #replace with your actull domain name
               tls:
                 certResolver: letsencrypt
-              service: chat_service
+              service: app_service
         
           services:
-            chat_service:
+            app_service:
               loadBalancer:
                 servers:
                   - url: "https://machine-ip:port" #repelace with your acuall ip 
