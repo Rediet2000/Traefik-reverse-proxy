@@ -54,37 +54,39 @@ Step 1 create create directory "traefik'
 Step 2 create dcoker compose file into docker-compose.yml
 
         nano docker-compose.yml
+      version: "3"
+      services:
+        traefik:
+          image: traefik:v3.1
+          container_name: traefik
+          restart: unless-stopped
+          security_opt:
+            - no-new-privileges:true
+          networks:
+            - proxy
+          ports:
+            - 80:80
+            - 443:443
+            - 8080:8080
+          volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./traefik-data/traefik.yml:/traefik.yml:ro
+            - ./traefik-data/acme.json:/acme.json
+            - ./traefik-data/configurations:/configurations
+          labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.traefik-secure.entrypoints=websecure"
+            - "traefik.http.routers.traefik-secure.middlewares=user-auth@file"
+            - "traefik.http.routers.traefik-secure.service=api@internal"
+            - "traefik.http.routers.traefik-dashboard.rule=Host(`app.example.com`)"
+            - "traefik.http.routers.traefik-dashboard.entrypoints=web"
+            - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8080"
 
-        version: "3"
-        
-        services:
-          traefik:
-            image: traefik:2.9
-            container_name: traefik
-            restart: unless-stopped
-            security_opt:
-              - no-new-privileges:true
-            networks:
-              - proxy
-            ports:
-              - 80:80
-              - 443:443
-            volumes:
-              - /etc/localtime:/etc/localtime:ro
-              - /var/run/docker.sock:/var/run/docker.sock:ro
-              - ./traefik-data/traefik.yml:/traefik.yml:ro
-              - ./traefik-data/acme.json:/acme.json
-              - ./traefik-data/configurations:/configurations
-            labels:
-              - "traefik.enable=true"
-              - "traefik.docker.network=proxy"
-              - "traefik.http.routers.traefik-secure.entrypoints=websecure"
-              - "traefik.http.routers.traefik-secure.middlewares=user-auth@file"
-              - "traefik.http.routers.traefik-secure.service=api@internal"
-        
-        networks:
-          proxy:
-            external: true
+networks:
+  proxy:
+    external: true
 
 step 3
 
@@ -97,45 +99,49 @@ step 4
 create file which is called traefik.yml inside traefik-data 
 
       nano traefik.yml
-        api:
-          dashboard: true
-        log:
-          level: DEBUG
-        
-        entryPoints:
-          web:
-            address: :80
-            http:
-              redirections:
-                entryPoint:
-                  to: websecure
-        
-          websecure:
-            address: :443
-            http:
-              middlewares:
-                - secureHeaders@file
-              tls:
-                certResolver: letsencrypt
-        
-        providers:
-          docker:
-            endpoint: "unix:///var/run/docker.sock"
-            exposedByDefault: false
-          file:
-            filename: /configurations/dynamic.yml
-        
-        certificatesResolvers:
-          letsencrypt:
-            acme:
-              email: your_email@example.com #add your email address
-              storage: acme.json
-              keyType: EC384
-              httpChallenge:
-                entryPoint: web
-        
-        serversTransport:
-          insecureSkipVerify: true
+           # API settings
+      api:
+        dashboard: true
+        insecure: true  # Use this only for local or development environments
+      
+      # Logging settings
+      log:
+        level: DEBUG  # Log level set to DEBUG for detailed logging
+      
+      # Entry points for web and websecure traffic
+      entryPoints:
+        web:
+          address: ":80"  # HTTP entry point
+        websecure:
+          address: ":443"  # HTTPS entry point
+          http:
+            middlewares:
+              - secureHeaders@file  # Apply security headers defined in external file
+            tls:
+              certResolver: letsencrypt  # Use Let's Encrypt for certificate resolution
+      
+      # Providers for Docker and file configurations
+      providers:
+        docker:
+          endpoint: "unix:///var/run/docker.sock"  # Docker socket for communication
+          exposedByDefault: false  # Do not expose containers unless explicitly enabled
+        file:
+          directory: /configurations  # Directory for dynamic file configurations
+          watch: true  # Watch the directory for changes
+      
+      # Certificate resolvers for Let's Encrypt
+      certificatesResolvers:
+        letsencrypt:
+          acme:
+            email: mail@example.com  # Email for Let's Encrypt registration
+            storage: acme.json  # File to store ACME information
+            keyType: EC384  # Use EC384 key type for certificates
+            httpChallenge:
+              entryPoint: web  # Use HTTP challenge on the web entry point for certificate validation
+      
+      # Transport settings for servers
+      serversTransport:
+        insecureSkipVerify: true  # Skip SSL verification (use only in dev or testing environments)
 
 Step 5 create acme.json file inside traefik-data directory
 
@@ -151,32 +157,72 @@ step 7 create dynamic.yml inside configurations directory
         nano dynamic.yml
 
         http:
-          middlewares:
-            secureHeaders:
-              headers:
-                sslRedirect: true
-                forceSTSHeader: true
-                stsIncludeSubdomains: true
-                stsPreload: true
-                stsSeconds: 31536000
-        
-          routers:
-            app_router:
-              rule: "Host(`example.domain.com`)" #replace with your actull domain name
-              tls:
-                certResolver: letsencrypt
-              service: app_service
-        
-          services:
-            app_service:
-              loadBalancer:
-                servers:
-                  - url: "https://machine-ip:port" #repelace with your acuall ip 
-         
-        tls:
-          options:
-            default:
-              sniStrict: true
+     # Middleware to apply security headers to all routes
+     middlewares:
+       secureHeaders:
+         headers:
+           sslRedirect: true             # Redirect all HTTP traffic to HTTPS
+           forceSTSHeader: true          # Enforce HTTP Strict Transport Security (HSTS)
+           stsIncludeSubdomains: true    # Apply HSTS to all subdomains
+           stsPreload: true              # Allow the domain to be preloaded into browsers' HSTS lists
+           stsSeconds: 31536000          # HSTS max age set to 1 year (in seconds)
+   
+     # Routers define how incoming requests are routed to services
+     routers:
+       example_router:
+         rule: "Host(`www.example.com`) || Host(`example.com`)"  # Match requests to 'example.com' or 'www.example.com'
+         tls:
+           certResolver: letsencrypt      # Use Let's Encrypt to automatically issue SSL certificates
+         service: example_service         # Route traffic to 'example_service'
+         middlewares:
+           - secureHeaders                # Apply secureHeaders middleware for HTTPS and HSTS enforcement
+   
+       example2_router:
+         rule: "Host(`www.example2.com`) || Host(`example2.com`)"  # Match requests to 'example2.com' or 'www.example2.com'
+         tls:
+           certResolver: letsencrypt      # Use Let's Encrypt for TLS
+         service: example2_service        # Route to 'example2_service'
+         middlewares:
+           - secureHeaders                # Apply secureHeaders middleware
+   
+       app1_example_router:
+         rule: "Host(`app.example.com`)"  # Route traffic for 'ais.example.com'
+         tls:
+           certResolver: letsencrypt      # Use Let's Encrypt for SSL certificates
+         service: app1_example_service    # Route to 'app1_example_service'
+         middlewares:
+           - secureHeaders                # Apply secureHeaders middleware
+   
+       app2_example_router:
+         rule: "Host(`app2.example.com`)"  # Route traffic for 'app2.example.com'
+         tls:
+           certResolver: letsencrypt      # Use Let's Encrypt for SSL
+         service: app2_example_service    # Route to 'app2_example_service'
+         middlewares:
+           - secureHeaders                # Apply secureHeaders middleware
+   
+     # Services define backend servers where requests are forwarded to
+     services:
+       app1_service:
+         loadBalancer:
+           servers:
+             - url: "http://localhost:port"  # Backend server for 'app1_service'
+   
+       app2_service:
+         loadBalancer:
+           servers:
+             - url: "http://your-ip:port/app2"  # Backend server for 'app2_service'
+   
+       example_service:
+         loadBalancer:
+           servers:
+             - url: "https://your-ip:port"  # Backend server for 'example_service'
+   
+       example2_service:
+         loadBalancer:
+           servers:
+             - url: "https://your-ip:port/example"  # Backend server for 'example2_service'
+
               
 Final step. go to traefik directory start application 
 
