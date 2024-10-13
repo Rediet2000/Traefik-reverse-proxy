@@ -98,8 +98,11 @@ step 4
 
 create file which is called traefik.yml inside traefik-data 
 
-      nano traefik.yml
-           # API settings
+    nano traefik.yml
+
+.
+
+      # API settings
       api:
         dashboard: true
         insecure: true  # Use this only for local or development environments
@@ -155,6 +158,7 @@ step 6 create configurations
 step 7 create dynamic.yml inside configurations directory
 
         nano dynamic.yml
+.
 
         http:
      # Middleware to apply security headers to all routes
