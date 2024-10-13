@@ -28,7 +28,7 @@ http:
         - secureHeaders                # Apply secureHeaders middleware
 
     app1_example_router:
-      rule: "Host(`ais.example.com`)"  # Route traffic for 'ais.example.com'
+      rule: "Host(`app.example.com`)"  # Route traffic for 'ais.example.com'
       tls:
         certResolver: letsencrypt      # Use Let's Encrypt for SSL certificates
       service: app1_example_service    # Route to 'app1_example_service'
@@ -48,7 +48,7 @@ http:
     app1_service:
       loadBalancer:
         servers:
-          - url: "http://your-ip:port"  # Backend server for 'app1_service'
+          - url: "http://localhost:port"  # Backend server for 'app1_service'
 
     app2_service:
       loadBalancer:
