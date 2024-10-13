@@ -1,39 +1,43 @@
-    api:
-      dashboard: true
-    log:
-      level: DEBUG
-    
-    entryPoints:
-      web:
-        address: :80
-        http:
-          redirections:
-            entryPoint:
-              to: websecure
-    
-      websecure:
-        address: :443
-        http:
-          middlewares:
-            - secureHeaders@file
-          tls:
-            certResolver: letsencrypt
-    
-    providers:
-      docker:
-        endpoint: "unix:///var/run/docker.sock"
-        exposedByDefault: false
-      file:
-        filename: /configurations/dynamic.yml
-    
-    certificatesResolvers:
-      letsencrypt:
-        acme:
-          email: your_email@example.com #add your email address
-          storage: acme.json
-          keyType: EC384
-          httpChallenge:
-            entryPoint: web
-    
-    serversTransport:
-      insecureSkipVerify: true
+# API settings
+api:
+  dashboard: true
+  insecure: true  # Use this only for local or development environments
+
+# Logging settings
+log:
+  level: DEBUG  # Log level set to DEBUG for detailed logging
+
+# Entry points for web and websecure traffic
+entryPoints:
+  web:
+    address: ":80"  # HTTP entry point
+  websecure:
+    address: ":443"  # HTTPS entry point
+    http:
+      middlewares:
+        - secureHeaders@file  # Apply security headers defined in external file
+      tls:
+        certResolver: letsencrypt  # Use Let's Encrypt for certificate resolution
+
+# Providers for Docker and file configurations
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"  # Docker socket for communication
+    exposedByDefault: false  # Do not expose containers unless explicitly enabled
+  file:
+    directory: /configurations  # Directory for dynamic file configurations
+    watch: true  # Watch the directory for changes
+
+# Certificate resolvers for Let's Encrypt
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: mail@example.com  # Email for Let's Encrypt registration
+      storage: acme.json  # File to store ACME information
+      keyType: EC384  # Use EC384 key type for certificates
+      httpChallenge:
+        entryPoint: web  # Use HTTP challenge on the web entry point for certificate validation
+
+# Transport settings for servers
+serversTransport:
+  insecureSkipVerify: true  # Skip SSL verification (use only in dev or testing environments)
