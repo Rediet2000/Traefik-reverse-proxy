@@ -1,26 +1,67 @@
 http:
+  # Middleware to apply security headers to all routes
+  middlewares:
+    secureHeaders:
+      headers:
+        sslRedirect: true             # Redirect all HTTP traffic to HTTPS
+        forceSTSHeader: true          # Enforce HTTP Strict Transport Security (HSTS)
+        stsIncludeSubdomains: true    # Apply HSTS to all subdomains
+        stsPreload: true              # Allow the domain to be preloaded into browsers' HSTS lists
+        stsSeconds: 31536000          # HSTS max age set to 1 year (in seconds)
+
+  # Routers define how incoming requests are routed to services
+  routers:
+    example_router:
+      rule: "Host(`www.example.com`) || Host(`example.com`)"  # Match requests to 'example.com' or 'www.example.com'
+      tls:
+        certResolver: letsencrypt      # Use Let's Encrypt to automatically issue SSL certificates
+      service: example_service         # Route traffic to 'example_service'
       middlewares:
-        secureHeaders:
-          headers:
-            sslRedirect: true
-            forceSTSHeader: true
-            stsIncludeSubdomains: true
-            stsPreload: true
-            stsSeconds: 31536000
-    
-      routers:
-        chat_router:
-          rule: "Host(`example.domain.com`)" #replace with your actull domain name
-          tls:
-            certResolver: letsencrypt
-          service: chat_service
-    
-      services:
-        chat_service:
-          loadBalancer:
-            servers:
-              - url: "https://machine-ip:port" #repelace with your acuall ip 
-tls:
-      options:
-        default:
-          sniStrict: true
+        - secureHeaders                # Apply secureHeaders middleware for HTTPS and HSTS enforcement
+
+    example2_router:
+      rule: "Host(`www.example2.com`) || Host(`example2.com`)"  # Match requests to 'example2.com' or 'www.example2.com'
+      tls:
+        certResolver: letsencrypt      # Use Let's Encrypt for TLS
+      service: example2_service        # Route to 'example2_service'
+      middlewares:
+        - secureHeaders                # Apply secureHeaders middleware
+
+    app1_example_router:
+      rule: "Host(`ais.example.com`)"  # Route traffic for 'ais.example.com'
+      tls:
+        certResolver: letsencrypt      # Use Let's Encrypt for SSL certificates
+      service: app1_example_service    # Route to 'app1_example_service'
+      middlewares:
+        - secureHeaders                # Apply secureHeaders middleware
+
+    app2_example_router:
+      rule: "Host(`app2.example.com`)"  # Route traffic for 'app2.example.com'
+      tls:
+        certResolver: letsencrypt      # Use Let's Encrypt for SSL
+      service: app2_example_service    # Route to 'app2_example_service'
+      middlewares:
+        - secureHeaders                # Apply secureHeaders middleware
+
+  # Services define backend servers where requests are forwarded to
+  services:
+    app1_service:
+      loadBalancer:
+        servers:
+          - url: "http://your-ip:port"  # Backend server for 'app1_service'
+
+    app2_service:
+      loadBalancer:
+        servers:
+          - url: "http://your-ip:port/app2"  # Backend server for 'app2_service'
+
+    example_service:
+      loadBalancer:
+        servers:
+          - url: "https://your-ip:port"  # Backend server for 'example_service'
+
+    example2_service:
+      loadBalancer:
+        servers:
+          - url: "https://your-ip:port/example"  # Backend server for 'example2_service'
+
